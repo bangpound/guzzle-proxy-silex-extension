@@ -1,0 +1,19 @@
+{
+    "name": "bangpound/guzzle-proxy-provider",
+    "description": "Guzzle proxy provider for Silex",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Benjamin Doherty",
+            "email": "bjd@bangpound.org"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "Bangpound\\Guzzle\\Proxy\\": "src/"
+        }
+    },
+    "require": {
+        "guzzle/guzzle": "~3.7"
+    }
+}

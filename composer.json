@@ -1,5 +1,5 @@
 {
-    "name": "bangpound/guzzle-proxy-provider",
+    "name": "bangpound/guzzle-proxy-silex-extension",
     "description": "Guzzle proxy provider for Silex",
     "license": "MIT",
     "authors": [

@@ -12,7 +12,6 @@ use Silex\Application;
 use Silex\ControllerCollection;
 use Silex\ControllerProviderInterface;
 use Silex\ServiceProviderInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -112,7 +111,6 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
 
             return new Response($body, $statusCode, $headers);
         })
-            ->secure($app['proxy.roles'])
             ->assert('client', implode('|', array_keys($app['proxy.endpoints'])))
             ->assert('path', '.*?')
             ->convert('client', function ($client) use ($app) {

@@ -44,14 +44,6 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
      */
     public function boot(Application $app)
     {
-        foreach ($app['proxy.endpoints'] as $endpoint => $options) {
-            $app['proxy.client.'. $endpoint] = $app->share(function () use ($app, $options) {
-                $config = new Collection($options);
-                $url = Url::factory($config->get('host'));
-                $config->remove('host');
-                return new Client($url, $config);
-            });
-        }
         $app->mount($app['proxy.mount_prefix'], $this->connect($app));
     }
 
@@ -64,50 +56,26 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
      */
     public function connect(Application $app)
     {
-        /** @var $controllers ControllerCollection */
+        /** @var $controllers \Silex\ControllerCollection */
         $controllers = $app['controllers_factory'];
 
-        $controllers->match('/{client}/{path}', function (Request $request, Client $client, $path) use ($app) {
+        $controllers->match('/{endpoint}/{path}', function (Request $request, $endpoint, $path) use ($app) {
 
-            // Symfony request is cast as a string and parsed by Guzzle.
-            $parsed = ParserRegistry::getInstance()
-                ->getParser('message')
-                ->parseRequest((string) $request);
-
-            // URL of the proxied service is extracted from the client. The requested path
-            // and query string are attached. Cloning it allows this client to be reused.
-            $url = clone $client->getBaseUrl();
+            // URL of the proxied service is extracted from the options. The requested path
+            // and query string are attached.
+            $url = Url::factory($endpoint['host']);
             $url->addPath($path)
                 ->setQuery($request->getQueryString());
 
-            /** @var $httpRequest \Guzzle\Http\Message\Request */
-            /** @var $httpResponse \Guzzle\Http\Message\Response */
-            $httpRequest = $client->createRequest($parsed['method'], $url, null, $request->getContent());
-            try {
-                $httpResponse = $httpRequest->send();
-            } catch (BadResponseException $e) {
-                $httpResponse = $e->getResponse();
-            }
-
-            // Stash the prepared Guzzle request and response in the Symfony request attributes
-            // for debugging.
-            $request->attributes->set('guzzle_request', $httpRequest);
-            $request->attributes->set('guzzle_response', $httpResponse);
-
-            $body = $httpResponse->getBody(true);
-            $statusCode = $httpResponse->getStatusCode();
-
-            // This cannot handle every response. Chunked transfer encoding would necessitate
-            // a streaming response.
-            $headers = $httpResponse->getHeaders()->toArray();
-            unset($headers['Transfer-Encoding']);
-
-            return new Response($body, $statusCode, $headers);
+            $client = new Client();
+            $response = $client->createRequest($request->getMethod(), $url, null, $request->getContent())->send();
+            return new Response($response->getBody(true), $response->getStatusCode(), $response->getHeaders()->toArray());
         })
-            ->assert('client', implode('|', array_keys($app['proxy.endpoints'])))
+            ->assert('endpoint', implode('|', array_keys($app['proxy.endpoints'])))
             ->assert('path', '.*?')
-            ->convert('client', function ($client) use ($app) {
-                return $app['proxy.client.'. $client];
+
+            ->convert('endpoint', function ($endpoint) use ($app) {
+                return $app['proxy.endpoints'][$endpoint];
             })
             ->bind('proxy')
         ;

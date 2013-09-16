@@ -33,10 +33,6 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
     {
         $app['proxy.mount_prefix'] = '/proxy';
         $app['proxy.endpoints'] = array();
-
-        $app['proxy.factory'] = $app->protect(function (Url $url, Collection $config) use ($app) {
-            return new Client($url, $config);
-        });
     }
 
     /**
@@ -53,7 +49,7 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
                 $config = new Collection($options);
                 $url = Url::factory($config->get('host'));
                 $config->remove('host');
-                return $app['proxy.factory']($url, $config);
+                return new Client($url, $config);
             });
         }
         $app->mount($app['proxy.mount_prefix'], $this->connect($app));

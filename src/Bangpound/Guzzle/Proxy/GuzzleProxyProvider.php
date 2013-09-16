@@ -32,7 +32,6 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
     public function register(Application $app)
     {
         $app['proxy.mount_prefix'] = '/proxy';
-        $app['proxy.roles'] = [ 'ROLE_ADMIN' ];
         $app['proxy.endpoints'] = array();
 
         $app['proxy.factory'] = $app->protect(function (Url $url, Collection $config) use ($app) {

@@ -37,8 +37,6 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
         $app['proxy.factory'] = $app->protect(function (Url $url, Collection $config) use ($app) {
             return new Client($url, $config);
         });
-
-        $app['proxy.route.after'] = $app->protect(function () {});
     }
 
     /**
@@ -116,7 +114,6 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
                 return $app['proxy.client.'. $client];
             })
             ->bind('proxy')
-            ->after($app['proxy.route.after'])
         ;
 
         return $controllers;

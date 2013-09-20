@@ -68,8 +68,29 @@ class GuzzleProxyProvider implements ServiceProviderInterface, ControllerProvide
                 ->setQuery($request->getQueryString());
 
             $client = new Client();
-            $response = $client->createRequest($request->getMethod(), $url, null, $request->getContent())->send();
-            return new Response($response->getBody(true), $response->getStatusCode(), $response->getHeaders()->toArray());
+            /** @var $httpRequest \Guzzle\Http\Message\Request */
+            /** @var $httpResponse \Guzzle\Http\Message\Response */
+            $httpRequest = $client->createRequest($request->getMethod(), $url, null, $request->getContent());
+            try {
+                $httpResponse = $httpRequest->send();
+            } catch (BadResponseException $e) {
+                $httpResponse = $e->getResponse();
+            }
+
+            // Stash the prepared Guzzle request and response in the Symfony request attributes
+            // for debugging.
+            $request->attributes->set('guzzle_request', $httpRequest);
+            $request->attributes->set('guzzle_response', $httpResponse);
+
+            $body = $httpResponse->getBody(true);
+            $statusCode = $httpResponse->getStatusCode();
+
+            // This cannot handle every response. Chunked transfer encoding would necessitate
+            // a streaming response.
+            $headers = $httpResponse->getHeaders()->toArray();
+            unset($headers['Transfer-Encoding']);
+
+            return new Response($body, $statusCode, $headers);
         })
             ->assert('endpoint', implode('|', array_keys($app['proxy.endpoints'])))
             ->assert('path', '.*?')
